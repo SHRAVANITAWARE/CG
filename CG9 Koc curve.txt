@@ -1,0 +1,149 @@
+#include <GL/glut.h>
+#include <math.h>
+#include <list>
+#include <iostream>
+#define PI 3.14159/180
+
+typedef struct _point {
+  float x;
+  float y;
+}point;
+
+using namespace std;
+
+/* Deklaracije callback funkcija. */
+static void on_display(void);
+
+int main(int argc, char **argv)
+{
+    /* Inicijalizuje se GLUT. */
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_RGB | /*GLUT_DEPTH | */ GLUT_DOUBLE);
+
+    /* Kreira se prozor. */
+    glutInitWindowSize(800, 800);
+    glutInitWindowPosition(100, 100);
+    glutCreateWindow(argv[0]);
+    glEnable (GL_LINE_SMOOTH);
+    glEnable (GL_BLEND);
+    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glHint (GL_LINE_SMOOTH_HINT, GL_NICEST);
+
+
+    /* Registruju se callback funkcije. */
+    glutDisplayFunc(on_display);
+
+    /* Obavlja se OpenGL inicijalizacija. */
+    glClearColor(0.75, 0.75, 0.75, 0);
+    glEnable(GL_DEPTH_TEST);
+
+    /* Program ulazi u glavnu petlju. */
+    glutMainLoop();
+
+    return 0;
+}
+
+static void on_display(void)
+{
+    /* Brise se prethodni sadrzaj prozora. */
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  
+    list<point> l;
+    list<point>::iterator i;
+    point niz[3];
+    point p1,p2;
+    
+    p1.x = -0.8;
+    p1.y = 0;
+    p2.x = 0.8;
+    p2.y = 0;
+    
+    l.push_back(p1);
+    l.push_back(p2);
+
+    int br_iteracija = 4;
+
+    while(br_iteracija > 0)
+    {
+        unsigned z = l.size();
+        int p = 1;
+        int j = 0;
+        while(p < z)
+        {
+            if(j==0)
+            {
+              i = l.begin();
+	      point pom1 = *i;
+              i++;
+	      point pom3 = *i;
+              niz[0].x = ((pom3.x-pom1.x)/3) + pom1.x;
+              niz[0].y = ((pom3.y-pom1.y)/3) + pom1.y;
+	      niz[2].x = (2*((pom3.x-pom1.x))/3) + pom1.x;
+	      niz[2].y = (2*((pom3.y-pom1.y))/3) + pom1.y;
+	      
+	      float r = sqrt(pow(niz[0].x-niz[2].x,2)+pow(niz[0].y-niz[2].y,2));
+	      float altitude = (r*sqrt(3.0))/2;
+	      float dx = niz[0].x - niz[2].x;
+	      
+	      point p;
+	      p.x = ((pom3.x-pom1.x)/2) + pom1.x;
+	      p.y = ((pom3.y-pom1.y)/2) + pom1.y;
+	      
+	      float slope = -dx / (niz[0].y-niz[2].y+0.000001);
+	      
+	      niz[1].x = sqrt(fabs(altitude*altitude - dx*dx)) / slope + p.x;
+	      niz[1].y = slope * (niz[1].x - p.x) + p.y;
+	      
+              l.insert(i,niz,niz+3);
+            }
+            else
+            {
+                point pom1 = *i;
+                i++;
+		point pom3 = *i;
+                niz[0].x = ((pom3.x-pom1.x)/3) + pom1.x;
+		niz[0].y = ((pom3.y-pom1.y)/3) + pom1.y;
+		niz[2].x = (2*((pom3.x-pom1.x))/3) + pom1.x;
+		niz[2].y = (2*((pom3.y-pom1.y))/3) + pom1.y;
+		
+		float r = sqrt(pow(niz[0].x-niz[2].x,2)+pow(niz[0].y-niz[2].y,2));
+		float altitude = (r*sqrt(3.0))/2;
+		float dx = niz[0].x - niz[2].x;
+		
+		point p;
+		p.x = ((pom3.x-pom1.x)/2) + pom1.x;
+		p.y = ((pom3.y-pom1.y)/2) + pom1.y;
+		
+		float slope = -dx / (niz[0].y-niz[2].y+0.000001);
+		
+		niz[1].x = sqrt(fabs(altitude*altitude - dx*dx)) / slope + p.x;
+		niz[1].y = slope * (niz[1].x - p.x) + p.y;
+		
+                l.insert(i,niz,niz+3);
+            }
+            p++;
+            j++;
+        }
+        br_iteracija--;
+    }
+
+    glColor3f(0,0,1);
+    //glPointSize(2);
+    list<point>::iterator it;
+    it = l.end();
+    it--;
+    
+      for(i = l.begin();i!=it;i++) {
+	glBegin(GL_LINES);
+	point tmp = *i;
+	i++;
+	point tmp2 = *i;
+	glVertex2f(tmp.x,tmp.y);
+	glVertex2f(tmp2.x,tmp2.y);
+	glEnd();
+	i--;
+      }
+
+    /* Nova slika se salje na ekran. */
+    glutSwapBuffers();
+}
