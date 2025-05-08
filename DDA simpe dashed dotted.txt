@@ -1,0 +1,117 @@
+#include <GL/glut.h>
+#include <cmath>
+#include <vector>
+#include <iostream>
+
+struct Point {
+    int x, y;
+};
+
+std::vector<Point> points;
+int currentStyle = 0;
+const char* styles[] = {"Simple", "Dotted", "Dashed", "Solid"};
+
+// Function to convert screen coordinates to Cartesian (origin at center)
+Point toCartesian(int x, int y) {
+    return { x - 400, 400 - y };  // Assuming window size 800x800
+}
+
+// Function to draw axes
+void drawAxes() {
+    glColor3f(0.7, 0.7, 0.7);
+    glBegin(GL_LINES);
+    glVertex2i(-400, 0);
+    glVertex2i(400, 0);
+    glVertex2i(0, -400);
+    glVertex2i(0, 400);
+    glEnd();
+}
+
+// DDA Line Drawing Algorithm with styles
+void drawDDA(Point p1, Point p2, const char* style) {
+    float dx = p2.x - p1.x;
+    float dy = p2.y - p1.y;
+    int steps = std::max(abs(dx), abs(dy));
+    float xInc = dx / steps;
+    float yInc = dy / steps;
+
+    float x = p1.x;
+    float y = p1.y;
+
+    glBegin(GL_POINTS);
+    for (int i = 0; i <= steps; i++) {
+        bool draw = false;
+
+        if (strcmp(style, "Simple") == 0) draw = true;
+        else if (strcmp(style, "Dotted") == 0 && i % 4 == 0) draw = true;
+        else if (strcmp(style, "Dashed") == 0 && (i / 10) % 2 == 0) draw = true;
+        else if (strcmp(style, "Solid") == 0) draw = true;
+
+        if (draw)
+            glVertex2i(round(x), round(y));
+
+        x += xInc;
+        y += yInc;
+    }
+    glEnd();
+}
+
+// Display callback
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    drawAxes();
+
+    if (points.size() == 2) {
+        glColor3f(1, 1, 1);
+        drawDDA(points[0], points[1], styles[currentStyle]);
+    }
+
+    glutSwapBuffers();
+}
+
+// Mouse click handler
+void mouse(int button, int state, int x, int y) {
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+        Point p = toCartesian(x, y);
+        points.push_back(p);
+
+        if (points.size() == 2) {
+            glutPostRedisplay(); // Redraw
+        }
+    }
+}
+
+// Keyboard handler for switching styles and clearing
+void keyboard(unsigned char key, int x, int y) {
+    if (key == ' ') {
+        currentStyle = (currentStyle + 1) % 4;
+        std::cout << "Switched to " << styles[currentStyle] << " line\n";
+        glutPostRedisplay();
+    } else if (key == 'c') {
+        points.clear();
+        glutPostRedisplay();
+    }
+}
+
+// Initialization
+void init() {
+    glClearColor(0, 0, 0, 1);
+    gluOrtho2D(-400, 400, -400, 400); // Cartesian system
+    glPointSize(2);
+}
+
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitWindowSize(800, 800);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
+    glutCreateWindow("DDA Line Drawing with Styles");
+
+    init();
+
+    glutDisplayFunc(display);
+    glutMouseFunc(mouse);
+    glutKeyboardFunc(keyboard);
+
+    glutMainLoop();
+    return 0;
+}
